@@ -28,20 +28,21 @@ pub fn block_on<T>(mut fut: impl Future<Output = T>) -> T {
     }
 }
 
-unsafe fn clone_waker(ptr: *const ()) -> RawWaker {
+fn clone_waker(ptr: *const ()) -> RawWaker {
     RawWaker::new(ptr, &VTABLE)
 }
 
-unsafe fn wake(ptr: *const ()) {
-    let ptr = &*(ptr as *const AtomicBool);
+fn wake(ptr: *const ()) {
+    wake_by_ref(ptr);
+    drop_waker(ptr);
+}
+
+fn wake_by_ref(ptr: *const ()) {
+    let ptr = unsafe { &*(ptr as *const AtomicBool) };
     ptr.store(true, Ordering::Release);
 }
 
-unsafe fn wake_by_ref(ptr: *const ()) {
-    wake(ptr);
-}
-
-unsafe fn drop_waker(_ptr: *const ()) {}
+fn drop_waker(_ptr: *const ()) {}
 
 #[cfg(test)]
 mod tests {
